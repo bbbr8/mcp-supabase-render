@@ -1,29 +1,131 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.0.3",
   "info": {
-    "title": "Supabase MCP",
-    "version": "1.0.0",
-    "description": "MCP server exposing Supabase tools"
+    "title": "Supabase Tools",
+    "version": "1.0.1"
   },
+  "servers": [
+    {
+      "url": "https://mcp-supabase-render.onrender.com"
+    }
+  ],
   "paths": {
     "/tools/supabase_select": {
       "post": {
-        "summary": "Select rows from a Supabase table",
-        "requestBody": { "required": true },
-        "responses": { "200": { "description": "Results" } }
+        "summary": "Select rows",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupabaseSelectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/tools/supabase_insert": {
       "post": {
-        "summary": "Insert rows into a Supabase table",
-        "requestBody": { "required": true },
-        "responses": { "200": { "description": "Insert response" } }
+        "summary": "Insert rows",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupabaseInsertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Writes disabled"
+          }
+        }
       }
-    },
-    "/mcp": {
-      "post": {
-        "summary": "Streamable HTTP endpoint for MCP",
-        "responses": { "200": { "description": "MCP response" } }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Order": {
+        "type": "object",
+        "properties": {
+          "column": {
+            "type": "string"
+          },
+          "ascending": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "column"
+        ]
+      },
+      "SupabaseSelectRequest": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string"
+          },
+          "select": {
+            "type": "string",
+            "example": "id,created_at"
+          },
+          "match": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "order": {
+            "$ref": "#/components/schemas/Order"
+          }
+        },
+        "required": [
+          "table",
+          "select"
+        ]
+      },
+      "SupabaseInsertRequest": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "returnRepresentation": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "table",
+          "rows"
+        ]
       }
     }
   }
