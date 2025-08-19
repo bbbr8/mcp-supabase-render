@@ -65,20 +65,25 @@ app.post('/tools/supabase_insert', async (req, res) => {
       return res.status(403).json({ error: 'Table not allowed' });
     }
     const url = `${SUPABASE_URL}/rest/v1/${table}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        ...supabaseHeaders,
-        Prefer: returnRepresentation ? 'return=representation' : 'return=minimal'
-      },
-      body: JSON.stringify(rows)
-    });
-    const data = await response.json();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          ...supabaseHeaders,
+          Prefer: returnRepresentation ? 'return=representation' : 'return=minimal'
+        },
+        body: JSON.stringify(rows)
+      });
+      const contentLength = response.headers.get('Content-Length');
+      if (response.status !== 204 && contentLength && contentLength !== '0') {
+        const data = await response.json();
+        res.status(response.status).json(data);
+      } else {
+        res.status(response.status).json({ status: response.status, message: 'Insert successful' });
+      }
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
 // Serve plugin manifest and OpenAPI spec
 app.get('/.well-known/ai-plugin.json', (req, res) => {
