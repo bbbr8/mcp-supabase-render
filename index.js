@@ -47,6 +47,15 @@ app.post('/tools/supabase_select', async (req, res) => {
       url += `&order=${encodeURIComponent(order.column)}.${order.ascending ? 'asc' : 'desc'}`;
     }
     const response = await fetch(url, { headers: supabaseHeaders });
+    if (!response.ok) {
+      let errorBody;
+      try {
+        errorBody = await response.json();
+      } catch (e) {
+        errorBody = await response.text();
+      }
+      return res.status(response.status).json({ error: errorBody });
+    }
     const data = await response.json();
     res.json(data);
   } catch (err) {
@@ -73,6 +82,15 @@ app.post('/tools/supabase_insert', async (req, res) => {
       },
       body: JSON.stringify(rows)
     });
+    if (!response.ok) {
+      let errorBody;
+      try {
+        errorBody = await response.json();
+      } catch (e) {
+        errorBody = await response.text();
+      }
+      return res.status(response.status).json({ error: errorBody });
+    }
     const data = await response.json();
     res.json(data);
   } catch (err) {
