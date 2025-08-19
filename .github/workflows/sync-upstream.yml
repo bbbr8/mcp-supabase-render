@@ -1,0 +1,28 @@
+name: Sync upstream
+on:
+  schedule:
+    # Runs every day at 04:17 UTC. Adjust this schedule as desired.
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add upstream
+        run: |
+          # Add the upstream remote if it doesn't already exist
+          git remote add upstream https://github.com/NguyenSiTrung/Release_Management_System.git || true
+          # Fetch the latest changes from upstream
+          git fetch upstream
+          # Checkout your default branch (assumed to be main)
+          git checkout main
+          # Merge upstream changes into your branch without creating a merge commit
+          git merge --ff-only upstream/main || true
+      - name: Push changes
+        run: |
+          # Push the updated branch back to your fork
+          git push origin main || true
