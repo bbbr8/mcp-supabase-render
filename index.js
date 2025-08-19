@@ -58,6 +58,8 @@ app.post('/tools/supabase_insert', async (req, res) => {
   if (!ALLOW_WRITES) {
     return res.status(403).json({ error: 'Inserts not allowed' });
   }
+
+  
   try {
     const { table, rows, returnRepresentation } = req.body;
     if (ALLOWED_TABLES.length && !ALLOWED_TABLES.includes(table)) {
