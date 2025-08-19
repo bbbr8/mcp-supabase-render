@@ -105,7 +105,13 @@ app.post('/tools/supabase_insert', async (req, res) => {
       }
       return res.status(response.status).json({ error: errorBody });
     }
-    const data = await response.json();
+    const contentLength = response.headers.get('content-length');
+    let data;
+    if (returnRepresentation || (contentLength && contentLength !== '0')) {
+      data = await response.json();
+    } else {
+      data = { success: true };
+    }
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
