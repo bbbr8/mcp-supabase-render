@@ -7,8 +7,7 @@
   "auth": { "type": "none" },
   "api": {
     "type": "openapi",
-    "url": "{{HOST}}/openapi.json",
-    "_comment": "Deployment scripts must inject the actual host."
+    "url": "https://mcp-supabase-render.onrender.com/openapi.json"
   },
   "logo_url": "",
   "contact_email": "",
