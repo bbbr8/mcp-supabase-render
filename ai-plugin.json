@@ -7,7 +7,7 @@
   "auth": { "type": "none" },
   "api": {
     "type": "openapi",
-    "url": "https://mcp-supabase-render.onrender.com/openapi.json"
+    "url": "https://mcp-supabas-render.onrender.com/openapi.json"
   },
   "logo_url": "",
   "contact_email": "",
