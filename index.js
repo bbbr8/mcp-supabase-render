@@ -6,8 +6,18 @@ const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const rawOrigins = process.env.ALLOWED_ORIGINS || '';
+const ALLOWED_ORIGINS = rawOrigins
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
 
-app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || [] }));
+if (ALLOWED_ORIGINS.length === 0) {
+  // Allow all origins if ALLOWED_ORIGINS is not specified
+  app.use(cors());
+} else {
+  app.use(cors({ origin: ALLOWED_ORIGINS }));
+}
 app.use(express.json());
 
 // Health check
