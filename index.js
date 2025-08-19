@@ -18,7 +18,11 @@ app.get('/', (req, res) => {
 // Supabase config from environment
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-const ALLOWED_TABLES = process.env.ALLOWED_TABLES?.split(',') || [];
+const rawTables = process.env.ALLOWED_TABLES || '';
+const ALLOWED_TABLES = rawTables
+  .split(',')
+  .map(t => t.trim())
+  .filter(Boolean);
 const ALLOW_WRITES = process.env.ALLOW_WRITES === 'true';
 
 const supabaseHeaders = {
