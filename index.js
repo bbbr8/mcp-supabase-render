@@ -6,26 +6,12 @@ const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
-const rawOrigins = process.env.ALLOWED_ORIGINS || '';
-const ALLOWED_ORIGINS = rawOrigins
-  .split(',')
-  .map(o => o.trim())
-  .filter(Boolean);
 
-if (ALLOWED_ORIGINS.length === 0) {
-  // Allow all origins if ALLOWED_ORIGINS is not specified
-  app.use(cors());
-} else {
-  app.use(cors({ origin: ALLOWED_ORIGINS }));
-}
-app.use(express.json());
+// Use CORS with optional allowed origins from env
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true }));
 
-// Health check
-app.get('/', (req, res) => {
-  res.json({ ok: true });
-});
-
-// Supabase config from environment
+// Supabase configuration from environment
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const rawTables = process.env.ALLOWED_TABLES || '';
@@ -41,8 +27,16 @@ const supabaseHeaders = {
   'Content-Type': 'application/json'
 };
 
-// `supabase_select` tool: read rows
-app.post('/tools/supabase_select', async (req, res) => {
+// JSON parser used on specific routes so streaming isn't broken
+const jsonParser = express.json();
+
+// Health check
+app.get('/', (req, res) => {
+  res.json({ ok: true });
+});
+
+// `supabase_select` tool: read rows with better error handling
+app.post('/tools/supabase_select', jsonParser, async (req, res) => {
   try {
     const { table, select, match, limit, order } = req.body;
     if (ALLOWED_TABLES.length && !ALLOWED_TABLES.includes(table)) {
@@ -77,8 +71,8 @@ app.post('/tools/supabase_select', async (req, res) => {
   }
 });
 
-// `supabase_insert` tool: write rows (if enabled)
-app.post('/tools/supabase_insert', async (req, res) => {
+// `supabase_insert` tool: write rows with error/body handling
+app.post('/tools/supabase_insert', jsonParser, async (req, res) => {
   if (!ALLOW_WRITES) {
     return res.status(403).json({ error: 'Inserts not allowed' });
   }
@@ -105,14 +99,13 @@ app.post('/tools/supabase_insert', async (req, res) => {
       }
       return res.status(response.status).json({ error: errorBody });
     }
-    const contentLength = response.headers.get('content-length');
-    let data;
-    if (returnRepresentation || (contentLength && contentLength !== '0')) {
-      data = await response.json();
+    const contentLength = response.headers.get('content-length') || response.headers.get('Content-Length');
+    if (response.status !== 204 && contentLength && contentLength !== '0') {
+      const data = await response.json();
+      return res.status(response.status).json(data);
     } else {
-      data = { success: true };
+      return res.status(response.status).json({ status: response.status, message: 'Insert successful' });
     }
-    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -127,18 +120,53 @@ app.get('/openapi.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'openapi.json'));
 });
 
-// MCP endpoint using streamable HTTP
+// Session store for MCP streaming connections
+const sessions = new Map();
+
+// MCP endpoint supporting bidirectional streaming
 app.post('/mcp', (req, res) => {
-  const sessionId = req.headers['mcp-session-id'] || uuidv4();
+  const requestedId = req.headers['mcp-session-id'];
+  if (requestedId && !sessions.has(requestedId)) {
+    return res.status(400).json({ error: 'Unknown session' });
+  }
+  const sessionId = requestedId || uuidv4();
+  sessions.set(sessionId, { res });
+
   res.setHeader('Mcp-Session-Id', sessionId);
   res.writeHead(200, {
     'Content-Type': 'application/json',
     'Connection': 'keep-alive',
     'Cache-Control': 'no-cache'
   });
-  // For demonstration purposes, send a handshake event and close the stream
-  res.write(JSON.stringify({ event: 'hello', sessionId }));
-  res.end();
+
+  // Notify client that the stream is ready
+  res.write(JSON.stringify({ event: 'ready', sessionId }) + '\n');
+
+  let buffer = '';
+  req.on('data', chunk => {
+    buffer += chunk.toString();
+    let idx;
+    while ((idx = buffer.indexOf('\n')) >= 0) {
+      const line = buffer.slice(0, idx).trim();
+      buffer = buffer.slice(idx + 1);
+      if (!line) continue;
+      try {
+        const msg = JSON.parse(line);
+        // Echo message back to client for bidirectional communication
+        res.write(JSON.stringify({ event: 'message', data: msg }) + '\n');
+      } catch (err) {
+        res.write(JSON.stringify({ event: 'error', message: 'Invalid JSON' }) + '\n');
+      }
+    }
+  });
+
+  const cleanup = () => {
+    sessions.delete(sessionId);
+    res.end();
+  };
+
+  req.on('end', cleanup);
+  req.on('close', cleanup);
 });
 
 app.listen(port, () => {
