@@ -1,0 +1,30 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Supabase MCP",
+    "version": "1.0.0",
+    "description": "MCP server exposing Supabase tools"
+  },
+  "paths": {
+    "/tools/supabase_select": {
+      "post": {
+        "summary": "Select rows from a Supabase table",
+        "requestBody": { "required": true },
+        "responses": { "200": { "description": "Results" } }
+      }
+    },
+    "/tools/supabase_insert": {
+      "post": {
+        "summary": "Insert rows into a Supabase table",
+        "requestBody": { "required": true },
+        "responses": { "200": { "description": "Insert response" } }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "summary": "Streamable HTTP endpoint for MCP",
+        "responses": { "200": { "description": "MCP response" } }
+      }
+    }
+  }
+}
