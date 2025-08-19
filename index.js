@@ -8,7 +8,6 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
 
 // Health check
 app.get('/', (req, res) => {
@@ -27,8 +26,11 @@ const supabaseHeaders = {
   'Content-Type': 'application/json'
 };
 
+// Session store for MCP streaming connections
+const sessions = new Map();
+
 // `supabase_select` tool: read rows
-app.post('/tools/supabase_select', async (req, res) => {
+app.post('/tools/supabase_select', express.json(), async (req, res) => {
   try {
     const { table, select, match, limit, order } = req.body;
     if (ALLOWED_TABLES.length && !ALLOWED_TABLES.includes(table)) {
@@ -55,7 +57,7 @@ app.post('/tools/supabase_select', async (req, res) => {
 });
 
 // `supabase_insert` tool: write rows (if enabled)
-app.post('/tools/supabase_insert', async (req, res) => {
+app.post('/tools/supabase_insert', express.json(), async (req, res) => {
   if (!ALLOW_WRITES) {
     return res.status(403).json({ error: 'Inserts not allowed' });
   }
@@ -91,16 +93,48 @@ app.get('/openapi.json', (req, res) => {
 
 // MCP endpoint using streamable HTTP
 app.post('/mcp', (req, res) => {
-  const sessionId = req.headers['mcp-session-id'] || uuidv4();
+  const requestedId = req.headers['mcp-session-id'];
+  if (requestedId && !sessions.has(requestedId)) {
+    return res.status(400).json({ error: 'Unknown session' });
+  }
+  const sessionId = requestedId || uuidv4();
+  sessions.set(sessionId, { res });
+
   res.setHeader('Mcp-Session-Id', sessionId);
   res.writeHead(200, {
     'Content-Type': 'application/json',
     'Connection': 'keep-alive',
     'Cache-Control': 'no-cache'
   });
-  // For demonstration purposes, send a handshake event and close the stream
-  res.write(JSON.stringify({ event: 'hello', sessionId }));
-  res.end();
+
+  // Notify client that the stream is ready
+  res.write(JSON.stringify({ event: 'ready', sessionId }) + '\n');
+
+  let buffer = '';
+  req.on('data', chunk => {
+    buffer += chunk.toString();
+    let idx;
+    while ((idx = buffer.indexOf('\n')) >= 0) {
+      const line = buffer.slice(0, idx).trim();
+      buffer = buffer.slice(idx + 1);
+      if (!line) continue;
+      try {
+        const msg = JSON.parse(line);
+        // Echo message back to client for bidirectional communication
+        res.write(JSON.stringify({ event: 'message', data: msg }) + '\n');
+      } catch (err) {
+        res.write(JSON.stringify({ event: 'error', message: 'Invalid JSON' }) + '\n');
+      }
+    }
+  });
+
+  const cleanup = () => {
+    sessions.delete(sessionId);
+    res.end();
+  };
+
+  req.on('end', cleanup);
+  req.on('close', cleanup);
 });
 
 app.listen(port, () => {
