@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const fetch = require('node-fetch');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -58,8 +59,6 @@ app.post('/tools/supabase_insert', async (req, res) => {
   if (!ALLOW_WRITES) {
     return res.status(403).json({ error: 'Inserts not allowed' });
   }
-
-  
   try {
     const { table, rows, returnRepresentation } = req.body;
     if (ALLOWED_TABLES.length && !ALLOWED_TABLES.includes(table)) {
@@ -79,6 +78,15 @@ app.post('/tools/supabase_insert', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Serve plugin manifest and OpenAPI spec
+app.get('/.well-known/ai-plugin.json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'ai-plugin.json'));
+});
+
+app.get('/openapi.json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'openapi.json'));
 });
 
 // MCP endpoint using streamable HTTP
