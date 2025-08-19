@@ -5,7 +5,11 @@
   "description_for_human": "A connector for Supabase using MCP. Supports reading and writing tables.",
   "description_for_model": "Use this connector to run supabase_select and supabase_insert on your Supabase database.",
   "auth": { "type": "none" },
-  "api": { "type": "openapi", "url": "https://mcp-supabase-render.onrender.com/openapi.json" },
+  "api": {
+    "type": "openapi",
+    "url": "{{HOST}}/openapi.json",
+    "_comment": "Deployment scripts must inject the actual host."
+  },
   "logo_url": "",
   "contact_email": "",
   "legal_info_url": ""
