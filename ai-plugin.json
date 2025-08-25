@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "name_for_human": "Supabase",
-  "name_for_model": "supabase",
+  "name_for_model": "Supabase",
   "description_for_human": "A connector for Supabase using MCP. Supports reading and writing tables.",
   "description_for_model": "Use this connector to run supabase_select and supabase_insert on your Supabase database.",
   "auth": { "type": "none" },
   "api": {
     "type": "openapi",
-    "url": "https://mcp-supabas-render.onrender.com/openapi.json"
+    "url": "https://supabase-mcp-server-mbjsolar.replit.app/openapi.json"
   },
   "logo_url": "",
   "contact_email": "",
