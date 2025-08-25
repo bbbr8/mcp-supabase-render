@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "https://mcp-supabase-render.onrender.com"
+      "url": "https://supabase-mcp-server-mbjsolar.replit.app"
     }
   ],
   "paths": {
@@ -25,7 +25,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Ok"
           }
         }
       }
@@ -45,10 +45,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
-          },
-          "403": {
-            "description": "Writes disabled"
+            "description": "Ok"
           }
         }
       }
@@ -57,75 +54,64 @@
   "components": {
     "schemas": {
       "Order": {
-        "type": "object",
-        "properties": {
-          "column": {
-            "type": "string"
-          },
-          "ascending": {
-            "type": "boolean",
-            "default": true
-          }
-        },
-        "required": [
-          "column"
-        ]
+        "type": "integer"
       },
       "SupabaseSelectRequest": {
         "type": "object",
+        "required": ["table", "columns"],
         "properties": {
           "table": {
-            "type": "string"
-          },
-          "select": {
             "type": "string",
-            "example": "id,created_at"
+            "description": "The name of the table to query."
           },
-          "match": {
+          "columns": {
+            "type": "array",
+            "description": "The columns to select.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "order": {
             "type": "object",
-            "additionalProperties": {
-              "type": [
-                "string",
-                "number",
-                "boolean"
-              ]
+            "description": "The order of the rows returned.",
+            "properties": {
+              "column": {
+                "$ref": "#/components/schemas/Order"
+              },
+              "direction": {
+                "type": "string",
+                "enum": ["asc", "desc"]
+              }
             }
           },
           "limit": {
             "type": "integer",
-            "minimum": 1,
-            "maximum": 1000
-          },
-          "order": {
-            "$ref": "#/components/schemas/Order"
+            "description": "Limits the number of rows returned."
           }
-        },
-        "required": [
-          "table",
-          "select"
-        ]
+        }
       },
       "SupabaseInsertRequest": {
-        "type": "object",
-        "properties": {
-          "table": {
-            "type": "string"
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "returnRepresentation": {
-            "type": "boolean",
-            "default": false
+      "type": "object",
+      "required": ["table", "rows"],
+      "properties": {
+        "table": {
+          "type": "string",
+          "description": "The table you want to insert into."
+        },
+        "rows": {
+          "type": "array",
+          "description": "The data you want to insert",
+          "items": {
+            "type": "object"
           }
         },
-        "required": [
-          "table",
-          "rows"
-        ]
+        "columns": {
+          "type": "array",
+          "description": "The columns you want to insert into",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     }
   }
